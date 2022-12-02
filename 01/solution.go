@@ -27,11 +27,9 @@ func main() {
 	})
 
 	// Part 1
-	fmt.Println("Max cals = ", lo.Max(elfCals))
+	fmt.Println("1. Max cals = ", lo.Max(elfCals))
 
 	// Part 2
 	sort.Ints(elfCals)
-	fmt.Println("Max 3 values are: ", elfCals[len(elfCals) - 3], elfCals[len(elfCals) - 2], elfCals[len(elfCals) - 1])
-	fmt.Println("The sum of these values are: ", elfCals[len(elfCals) - 3] + elfCals[len(elfCals) - 2] + elfCals[len(elfCals) - 1])
-
+	fmt.Println("2. The sum of the max 3 values =", lo.Sum(elfCals[len(elfCals)-3:]))
 }
