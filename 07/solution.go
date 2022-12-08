@@ -8,21 +8,11 @@ import (
 )
 
 func main() {
-	raw, _ := os.ReadFile("./example.txt")
-	// raw, _ := os.ReadFile("./input.txt")
+	// raw, _ := os.ReadFile("./example.txt")
+	raw, _ := os.ReadFile("./input.txt")
 	data := strings.ReplaceAll(string(raw), "\r\n", "\n")
 	instructions := strings.Split(data, "\n")
 
-	// Part 1
-	answerp1 := part1(instructions)
-	fmt.Println("Sums of files with size under 100k on disk", answerp1)
-
-	// Part 2
-	// answerp2 := part2(columns, instructions)
-	// fmt.Println("Crates on the top of the stack Cratemover 9001 =", answerp2)
-}
-
-func part1(instructions []string) int {
 	m := map[string]int{}
 	directoryTree := []string{}
 	for _, instruction := range instructions {
@@ -34,15 +24,26 @@ func part1(instructions []string) int {
 		} else {
 			fileSize, _ := strconv.Atoi(strings.Split(instruction, " ")[0])
 
-			for _, dir := range directoryTree {
-				m[dir] += fileSize
+			for i := range directoryTree {
+				dirpath := strings.Join(directoryTree[:i+1], "/")
+				m[dirpath] += fileSize
 			}
 		}
 	}
-	fmt.Println(m)
+
+	// Part 1
+	answerp1 := part1(m)
+	fmt.Println("Sums of files with size under 100k on disk: ", answerp1)
+
+	// Part 2
+	answerp2 := part2(m)
+	fmt.Println("Size of smallest single file removed: ", answerp2)
+}
+
+func part1(sizes map[string]int) int {
 	maxSize := 100000
 	t := 0
-	for _, v := range m {
+	for _, v := range sizes {
 		if v <= maxSize {
 			t += v
 		}
@@ -50,13 +51,30 @@ func part1(instructions []string) int {
 	return t
 }
 
-func changeDirectory(directoryTree []string, path string) []string {
-	if path == "/" {
-		directoryTree = append(directoryTree, "/")
-	} else if path == ".." {
-		directoryTree = directoryTree[:len(directoryTree)-1]
-	} else {
-		directoryTree = append(directoryTree, path)
+func part2(sizes map[string]int) int {
+	diskSize := 70000000
+	required := 30000000
+	remainingspace := diskSize - sizes["root"]
+	requiredspace := required - remainingspace
+	biggestspace := diskSize
+	var bestdirsize int
+	for _, v := range sizes {
+		spaceifdeleted := v - requiredspace
+		if spaceifdeleted > 0 && spaceifdeleted < biggestspace {
+			biggestspace = spaceifdeleted
+			bestdirsize = v
+		}
 	}
-	return directoryTree
+	return bestdirsize
+}
+
+func changeDirectory(dirTree []string, path string) []string {
+	if path == "/" {
+		dirTree = append(dirTree, "root")
+	} else if path == ".." {
+		dirTree = dirTree[:len(dirTree)-1]
+	} else {
+		dirTree = append(dirTree, path)
+	}
+	return dirTree
 }
