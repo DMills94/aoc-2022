@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/samber/lo"
@@ -14,76 +15,52 @@ func main() {
 	// raw, _ := os.ReadFile("./example.txt")
 	raw, _ := os.ReadFile("./input.txt")
 	data := strings.ReplaceAll(string(raw), "\r\n", "\n")
-	pairs := strings.Split(data, "\n\n")
 
 	// Part 1
-	answerp1 := part1(pairs)
+	answerp1 := part1(data)
 	fmt.Println("Sum of correct pair indices", answerp1)
 
 	// Part 2
-	// answerp2 := part2(treegrid)
-	// fmt.Println("Optimal scenic score:", answerp2)
+	answerp2 := part2(data)
+	fmt.Println("Decoder:", answerp2)
 }
 
-func part1(pairs []string) int {
+func part1(data string) int {
+	pairs := strings.Split(data, "\n\n")
 	correctPairIndexes := []int{}
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= len(pairs); i++ {
 		pair := pairs[i-1]
 		left, right := ProcessPairs(pair)
-		fmt.Println("PAIR", i)
-		fmt.Println(left)
-		fmt.Println(right)
-		fmt.Println("---")
+		res := Compare(left, right)
 
-		index := 0
-		run := true
-		for run {
-			if len(left) == 0 && len(right) != 0 {
-				run = false
-				correctPairIndexes = append(correctPairIndexes, i)
-				fmt.Println("CORRECT > LEFT ARRAY EMPTY")
-				break
-			} else if len(left) != 0 && len(right) == 0 {
-				run = false
-				fmt.Println("WRONG > RIGHT ARRAY EMPTY")
-				break
-			}
-			if index == len(left) {
-				correctPairIndexes = append(correctPairIndexes, i)
-				run = false
-				fmt.Println("CORRECT > LEFT OUT OF ENTRIES")
-				break
-			}
-			l := left[index]
-			if index == len(right) {
-				run = false
-				fmt.Println("WRONG > RIGHT OUT OF ENTRIES")
-				break
-			}
-			r := right[index]
-			var res string
-			res = Compare(l, r)
-
-			if res == "LEFT" {
-				correctPairIndexes = append(correctPairIndexes, i)
-				run = false
-				fmt.Println("CORRECT")
-				break
-			} else if res == "RIGHT" {
-				run = false
-				fmt.Println("WRONG")
-				break
-			}
-			index++
+		if res == "LEFT" {
+			correctPairIndexes = append(correctPairIndexes, i)
 		}
-		fmt.Println()
 	}
-	fmt.Println(correctPairIndexes)
 	return lo.Sum(correctPairIndexes)
 }
 
-// func part2(arr []string) {
-// }
+func part2(data string) int {
+	packets := strings.Split(strings.ReplaceAll(data, "\n\n", "\n"), "\n")
+	divider1 := "[[2]]"
+	divider2 := "[[6]]"
+	packets = append(packets, divider1, divider2)
+
+	sort.Slice(packets, func(i, j int) bool {
+		pairsStr := packets[i] + "\n" + packets[j]
+		left, right := ProcessPairs(pairsStr)
+		res := Compare(left, right)
+		if res == "LEFT" {
+			return true
+		} else {
+			return false
+		}
+	})
+
+	indexDiv1 := lo.IndexOf(packets, divider1) + 1
+	indexDiv2 := lo.IndexOf(packets, divider2) + 1
+	return indexDiv1 * indexDiv2
+}
 
 func ProcessPairs(pair string) ([]interface{}, []interface{}) {
 	left := strings.Split(pair, "\n")[0]
@@ -97,7 +74,6 @@ func ProcessPairs(pair string) ([]interface{}, []interface{}) {
 
 func Compare(a interface{}, b interface{}) string {
 	var res string
-	fmt.Println(a, "VS", b)
 	if reflect.TypeOf(a).Kind() == reflect.Float64 && reflect.TypeOf(b).Kind() == reflect.Float64 {
 		res = RightOrderInts(a.(float64), b.(float64))
 	} else if reflect.TypeOf(b).Kind() == reflect.Float64 {
@@ -107,18 +83,25 @@ func Compare(a interface{}, b interface{}) string {
 		newR := b.([]interface{})
 		res = Compare([]interface{}{a.(float64)}, newR)
 	} else {
-		if len(a.([]interface{})) == 0 && len(b.([]interface{})) != 0 {
-			return "LEFT"
+		if len(a.([]interface{})) == 0 && len(b.([]interface{})) == 0 {
+			res = "DRAW"
+		} else if len(a.([]interface{})) == 0 && len(b.([]interface{})) != 0 {
+			res = "LEFT"
 		} else if len(a.([]interface{})) != 0 && len(b.([]interface{})) == 0 {
-			return "RIGHT"
+			res = "RIGHT"
 		} else {
-			for i := 0; i < len(a.([]interface{})) && i < len(b.([]interface{})); i++ {
-				newL := a.([]interface{})
-				newR := b.([]interface{})
-				res = Compare(newL[i], newR[i])
-
-				if res == "LEFT" || res == "RIGHT" {
+			for i := 0; i < lo.Max([]int{len(a.([]interface{})), len(b.([]interface{}))}); i++ {
+				if i == len(a.([]interface{})) {
+					res = "LEFT"
 					break
+				} else if i == len(b.([]interface{})) {
+					res = "RIGHT"
+					break
+				} else {
+					res = Compare(a.([]interface{})[i], b.([]interface{})[i])
+					if res != "DRAW" {
+						break
+					}
 				}
 			}
 		}
